@@ -1,12 +1,12 @@
 # models
 
-## 🚀 Overview
+## Overview
 This is a **Generic** project developed by Sudhanshu Singh.
 
-## 🛠️ Tech Stack
+## Tech Stack
 - Generic
 
-## 🏃‍♂️ How to Run
+## How to Run
 Check the source code for specific running instructions.
 
 ---

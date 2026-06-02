@@ -1,12 +1,12 @@
 # utils
 
-## 🚀 Overview
+## Overview
 This is a **Python** project developed by Sudhanshu Singh.
 
-## 🛠️ Tech Stack
+## Tech Stack
 - **Language**: Python
 
-## 🏃‍♂️ How to Run
+## How to Run
 ```bash
 # Install dependencies
 pip install -r requirements.txt

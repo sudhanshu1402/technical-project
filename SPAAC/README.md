@@ -2,8 +2,8 @@
 
 ## Problem Definition
 
-In today’s time, there are several students who don’t pay attention during class lectures. Teacher can’t pay attention to each student specifically in the class.
-So, to overcome this gap and to fill it we came up with the idea of this project - “Student Performance Analysis and Attention in Classroom (SPAAC).
+In today's time, there are several students who don't pay attention during class lectures. Teacher can't pay attention to each student specifically in the class.
+So, to overcome this gap and to fill it we came up with the idea of this project - "Student Performance Analysis and Attention in Classroom (SPAAC).
 
 ## Objective
 
