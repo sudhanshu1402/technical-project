@@ -1,4 +1,4 @@
-se# Technical Project: SPAAC
+# Technical Project: SPAAC
 ~ A smart EYE for every Class
 
 **SPAAC** is an advanced technical project focusing on computer vision and potential emotion recognition applications. It involves deep learning models (`.hdf5`), data augmentation, and visual processing utilities.
@@ -11,7 +11,8 @@ se# Technical Project: SPAAC
 | **utils/** | Helper scripts for inference, visualization, and preprocessing. |
 | **images/** | Dataset or sample images used for testing/training. |
 | **test/** | Test assets including videos (`.mp4`) and GIFs. |
-| **SPAAC_App.py** | Main application entry point. |
+| **SPAAC/emotions.py** | Emotion-classification entry point (still-image / batch). |
+| **SPAAC/face-rec-emotion.py** | Real-time face-recognition + emotion entry point (video stream). |
 
 ## Tech Stack
 
