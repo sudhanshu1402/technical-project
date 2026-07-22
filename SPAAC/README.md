@@ -1,86 +1,78 @@
-# SPAAC
+# SPAAC — Student Performance and Attention Analysis in Classroom
 
-## Problem Definition
+Real-time webcam tool that recognizes known students by face and classifies whether each one looks attentive, using a CNN trained on the FER2013 facial-emotion dataset.
 
-In today's time, there are several students who don't pay attention during class lectures. Teacher can't pay attention to each student specifically in the class.
-So, to overcome this gap and to fill it we came up with the idea of this project - "Student Performance Analysis and Attention in Classroom (SPAAC).
+This was a college group project. It's a working prototype, not production software — see the honest notes at the end before you try to run it.
 
-## Objective
+## What it does
 
-This project will approach automatic estimation of attendance and emotion expression of students along with the performance of students during lectures in the classroom. This approach will use real time Machine Learning algorithms and will generate a 2D data for students that uses the classroom cameras that identifies facial properties of a student. Machine learning algorithms are used to train classifiers which estimate time-varying attention levels of individual students.
+Point it at a classroom camera (or a video file) and, per frame, it:
 
-## Dependencies
+1. Detects faces with dlib's frontal face detector.
+2. Matches each face against a small gallery of enrolled students (`images/*.jpg`) using the `face_recognition` library.
+3. Crops each face, runs it through a Keras CNN (`models/emotion_model.hdf5`), and maps the predicted FER2013 emotion to an attention label.
+4. Draws a bounding box + label (`<name> is <emotion>`) on the video and logs a row per detection to a CSV with name, probability, attention mode, attendance flag, and timestamp.
 
-- Opencv
-- Cmake
-- Dlib
-- face_recognition
-- Keras
-- CNN
-- Keras
-- TensorFlow
-- NumPy
-- Pandas
-- Imutils
-- Statistics
-- datetime
-- matplotlib
+The attention idea: FER2013's seven emotions are collapsed into two classes in `utils/datasets.py` — `happy`, `surprise`, `neutral` count as **Attentive**, everything else (`angry`, `disgust`, `fear`, `sad`) as **NOT ATTENTIVE**.
 
-## Class Diagram
+## Files
 
-![image](https://user-images.githubusercontent.com/99204211/182110385-e2b26ddf-9e9e-4f04-a973-ed6caeb8744a.png)
+| File | Role |
+|------|------|
+| `face-rec-emotion.py` | Main script. Face recognition + emotion/attention + per-frame CSV logging. |
+| `emotions.py` | Simpler variant: emotion detection only, no face recognition, reads from `test/testvdo.mp4`. |
+| `utils/datasets.py` | FER2013/IMDB/KDEF dataset loaders and the emotion→attention label map (`get_labels`). |
+| `utils/inference.py` | Drawing helpers (bounding box, text) and face-detection wrappers. |
+| `utils/preprocessor.py` | Pixel normalization for model input. |
+| `utils/grad_cam.py`, `visualizer.py`, `data_augmentation.py` | Training/visualization helpers (not used by the two run scripts). |
+| `models/emotion_model.hdf5` | Pre-trained Keras emotion CNN (48×48 grayscale input). |
+| `images/*.jpg` | Enrolled student face gallery. |
+| `test/` | Sample videos, a demo GIF, and the project report PDF. |
 
-## Use Case Diagram
+## Stack
 
-![image](https://user-images.githubusercontent.com/99204211/182110412-d563b2df-450b-4d3c-89a5-e1a5d1d3a573.png)
+Python, with:
 
-## ER Diagram
+- OpenCV (`cv2`) — video capture, drawing, color conversion
+- dlib — frontal face detector
+- `face_recognition` — face encoding and matching (needs dlib + CMake to build)
+- Keras / TensorFlow — loads and runs the emotion CNN
+- NumPy, pandas — arrays and CSV output
+- imutils — `face_utils.rect_to_bb`
+- matplotlib — used by some util helpers
 
-![image](https://user-images.githubusercontent.com/99204211/182110439-d94bbb12-431c-434c-9a48-566029faa033.png)
+There's no `requirements.txt` in the repo. Install roughly:
 
-## Flowchart
+```bash
+pip install opencv-python dlib face_recognition keras tensorflow numpy pandas imutils matplotlib scipy
+```
 
-![image](https://user-images.githubusercontent.com/99204211/182110466-e0380d63-fe36-42d4-82ca-6f2e8d0d59ae.png)
+`dlib` needs CMake and a C++ toolchain installed first.
 
-## Stakeholder Analysis
+## Run
 
-![image](https://user-images.githubusercontent.com/99204211/182110488-ddbde5b2-ecd0-4942-80b2-416117a07c30.png)
+```bash
+# Main version: face recognition + attention, uses webcam
+python face-rec-emotion.py
 
-## Requirement Analysis
+# Emotion-only version, plays test/testvdo.mp4
+python emotions.py
+```
 
-- Teaching students offline is going to be difficult and tough after COVID-19. Students have become very comfortable with online education.
-- Almost 95% of students are going to face difficulties studying offline after a long period of online education.
-- Common problems that students are going to face is not giving proper attention, distraction in class, using phones and drowsiness.
-- So, basically our software will be used by colleges, schools and universities.
-- User would want to use our software to
-  Monitor each student individually.
-  Analyze the attention of every student.
-  Easy attendance.
-- Important aspects of our project:
-  High accuracy
-  Easy recognition
-  Real time monitoring
+Press `q` to quit the video window.
 
-## Output
+Toggle the source with the `USE_WEBCAM` flag near the top of each script (`True` = webcam index 0, `False` = the video file in `test/`).
 
-![image](https://user-images.githubusercontent.com/99204211/182108110-6fb858e6-1363-4f31-99f2-1dff09598c40.png)
-![image](https://user-images.githubusercontent.com/99204211/182108125-9b03f0da-45e8-4272-827c-1b210881aefa.png)
-![image](https://user-images.githubusercontent.com/99204211/182108145-d3089841-716a-4511-9d98-42ca19b51380.png)
-![image](https://user-images.githubusercontent.com/99204211/182108159-b791f691-eeea-487b-9c9b-6152d755ad66.png)
-![image](https://user-images.githubusercontent.com/99204211/182108188-29a06ead-6818-446f-8f2e-476c7a5a9b73.png)
-![image](https://user-images.githubusercontent.com/99204211/182108215-157193ab-ce2e-4c03-8252-04a3802c362f.png)
-![image](https://user-images.githubusercontent.com/99204211/182108255-5a8d4b10-b116-4433-94d7-5de3721452cc.png)
+To enroll students, drop a clear front-facing `name.jpg` in `images/` and add the load/encode lines plus the name to `known_face_encodings` / `known_face_names` in `face-rec-emotion.py`.
 
-## Refernces
+## Known rough edges
 
-- https://opencv.org/
-- https://numpy.org/doc/stable/
-- http://dlib.net/
-- https://pypi.org/project/imutils/
-- https://keras.io/
-- https://pypi.org/project/face-recognition/
-- https://towardsdatascience.com/top-10-python-libraries-for-data-science-cd82294ec266
-- https://www.npmjs.com/package/utils
-- https://docs.python.org/3/library/datetime.html
-- https://pandas.pydata.org/
-- https://matplotlib.org
+Being honest about the prototype state:
+
+- **Hardcoded CSV path.** `face-rec-emotion.py` writes to `C:\Users\admin\PycharmProjects\SPAAC\file.csv`. Change that line or logging will fail on any other machine.
+- **Enrollment is hardcoded.** The seven students are loaded by name in the script rather than by scanning the `images/` folder.
+- **The color-by-emotion branches never fire as written.** `get_labels("fer2013")` returns `Attentive` / `NOT ATTENTIVE`, but the `if emotion_text == "ANGRY"` etc. checks compare against raw emotion names, so the box color always falls through to the default green. Cosmetic, not fatal.
+- **`datasets.py` uses `pd.get_dummies(...).as_matrix()`**, removed in modern pandas — only matters if you retrain, not for inference.
+- The bottom display loop in `face-rec-emotion.py` reads `face_names` (empty) rather than the per-frame names, so that second label pass draws nothing.
+
+The `utils/` code and the general architecture follow the well-known open-source face/emotion classification approach; the classroom attention framing, student gallery, and CSV attendance logging are what this project added on top.
