@@ -1,43 +1,85 @@
-# Technical Project: SPAAC
-~ A smart EYE for every Class
+# SPAAC — Student Performance & Attention Analysis in Class
 
-**SPAAC** is an advanced technical project focusing on computer vision and potential emotion recognition applications. It involves deep learning models (`.hdf5`), data augmentation, and visual processing utilities.
+A webcam/video pipeline that identifies known students by face and reads their facial expression frame by frame, then logs each person, their emotion, and an attendance flag. Built as a college project; this repo is the phase-1 prototype.
 
-## Project Structure
+## What it does
 
-| Directory/File | Description |
+Point it at a classroom camera (or a test video) and for every detected face it:
+
+1. Matches the face against a small set of enrolled students (7 people, one photo each in `images/`).
+2. Crops the face, runs it through a Keras CNN trained on FER2013, and predicts an emotion.
+3. Draws a bounding box + label on the frame and appends a row to a CSV: name, emotion probability, emotion mode over the last frames, attendance = 1, and a timestamp.
+
+The pitch behind it: a teacher can't watch every student at once, so use the existing CCTV feed to flag who's present and who looks disengaged. It's an academic proof of concept, not a deployed product.
+
+## Two entry points
+
+Both live in `SPAAC/` and must be run from inside that folder (paths are relative to it).
+
+| Script | What it does |
 | :--- | :--- |
-| **models/** | Pre-trained deep learning models (e.g., `emotion_model.hdf5`). |
-| **utils/** | Helper scripts for inference, visualization, and preprocessing. |
-| **images/** | Dataset or sample images used for testing/training. |
-| **test/** | Test assets including videos (`.mp4`) and GIFs. |
-| **SPAAC/emotions.py** | Emotion-classification entry point (still-image / batch). |
-| **SPAAC/face-rec-emotion.py** | Real-time face-recognition + emotion entry point (video stream). |
+| `face-rec-emotion.py` | The full thing: face recognition + emotion + facial-landmark dots + CSV logging. Webcam on by default (`USE_WEBCAM = True`). |
+| `emotions.py` | Emotion detection only, no identity, no CSV. Simpler. Reads from `./test/testvdo.mp4` by default (`USE_WEBCAM = False`). |
 
-## Tech Stack
+`utils/` holds the supporting code: `datasets.py` (label maps + FER2013/IMDB/KDEF loaders), `inference.py` (box/text drawing, offsets), `preprocessor.py` (normalize to [-1, 1]), plus `grad_cam.py`, `visualizer.py`, and `data_augmentation.py` that aren't wired into the two entry scripts.
 
-- **Deep Learning:** TensorFlow / Keras
-- **Computer Vision:** OpenCV (`cv2`)
-- **Language:** Python
-- **Visualization:** Matplotlib / Custom Visualizers
+## Stack
 
-<img width="5972" height="2428" alt="image" src="https://github.com/user-attachments/assets/9951a1fd-4407-478b-98f5-3fe59756b3cd" />
+- Python
+- OpenCV (`cv2`) — capture, color conversion, drawing, window display
+- `dlib` frontal face detector + the `face_recognition` library (dlib-based) for identity matching
+- Keras / TensorFlow — loads `models/emotion_model.hdf5` (~850 KB, 48×48 grayscale input, FER2013-style mini-CNN)
+- `imutils`, NumPy, pandas, matplotlib
 
-## Overview
+There's no `requirements.txt`. Install what the imports need:
 
-This project implements a pipeline for analyzing visual data. It includes modules for:
-- Data Augmentation
-- Gradient Class Activation Mapping (Grad-CAM)
-- Real-time Inference on video streams
+```bash
+pip install opencv-python dlib face_recognition keras tensorflow imutils numpy pandas matplotlib scipy
+```
 
-In today's time, there are several students who don't pay attention during class lectures. Teacher can't pay attention to each student specifically in the class. So, to overcome this gap and to fill it we came up with the idea of this project - "Student Performance Analysis and Attention in Classroom (SPAAC).
+`dlib` needs CMake and a C++ toolchain to build — that's usually the painful part of setup.
 
-SPAAC is an idea to make a real time system which can calculate student attendance along with its performance (i.e., happy, neutral, sad or angry) in the classroom with the help of classroom CCTV using facial recognition algorithms along with deep learning to achieve better results.
+## Run
 
-This system will capture students through a CCTV camera present in the classroom and generate emotions based on their expression in class. Algorithms like CNN, Image Classification, Score Prediction, Face Recognition, Regression, SVM, Naive Bayes, Accuracy and Prediction are used. During the first phase we have studied various aspects and implemented a very basic facial recognition program to recognize the individual.
+```bash
+cd SPAAC
+python face-rec-emotion.py     # face recognition + emotion + CSV
+# or
+python emotions.py             # emotion only
+```
 
-Face systems with artificial intelligence are dramatically changing businesses. There is a wide range of face system building platforms that are available for various enterprises, such as e-commerce, retail, banking, leisure, travel, healthcare, and so on.
+Press `q` to quit the window. To feed a file instead of the webcam, flip `USE_WEBCAM` at the top of the script; it falls back to `./test/testvdo.mp4`.
 
----
-*Maintained by Sudhanshu Singh*
+## Enrolling faces
 
+`face-rec-emotion.py` hardcodes the roster near the top — one `face_recognition.load_image_file(...)` call per student, pointing at a JPG in `images/`, collected into `known_face_encodings` / `known_face_names`. To add or change students, edit those lists and drop matching photos in `images/`. Anyone not matched shows up as `UNKNOWN`.
+
+## Things worth knowing (and rough edges)
+
+This is old prototype code and it shows:
+
+- **The CSV path is hardcoded to a Windows machine**: `C:\Users\admin\PycharmProjects\SPAAC\file.csv`. On any other machine `df.to_csv(...)` will fail. Change that line before expecting output.
+- **The label map doesn't match the emotion strings.** `get_labels("fer2013")` in `datasets.py` returns `"Attentive"` / `"NOT ATTENTIVE"` (repurposed from the raw emotion classes), but both scripts branch on `"ANGRY"`, `"HAPPY"`, `"SAD"`, etc. Those comparisons never hit, so the box color falls through to the default. `emotions.py` displays the attentive/not-attentive mode; the color logic is effectively dead. If you want real emotion words on screen, restore the standard FER2013 label map.
+- `datasets.py` uses `pandas.get_dummies(...).as_matrix()`, removed in modern pandas — the FER2013 loader only runs on old pandas.
+- Recognition runs on a half-scale frame for speed; some drawing code assumes quarter-scale (`*= 2` vs the 0.50 resize), a leftover from the original source.
+- The model and much of `utils/` are adapted from the open-source face-classification work by oarriaga; the classroom/attendance layer on top is the project's own.
+
+## Layout
+
+```
+SPAAC/
+  face-rec-emotion.py   real-time recognition + emotion + logging
+  emotions.py           emotion-only demo
+  models/               emotion_model.hdf5
+  images/               enrolled student photos (one JPG each)
+  test/                 sample videos, GIFs, project report PDF
+  utils/                datasets, inference, preprocessing, grad-cam, etc.
+```
+
+## Scope
+
+Student project, first phase. It works as a demo on a handful of known faces and a test video; it is not tuned, benchmarked, or hardened, and the emotion labels currently render as an attentive/not-attentive flag rather than named emotions. Treat it as a learning exercise in stitching face recognition and a CNN classifier into one OpenCV loop.
+
+## License
+
+MIT. See `LICENSE`.
